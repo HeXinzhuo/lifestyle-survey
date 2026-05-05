@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>2026生活方式大调查</title>
+    <meta name="description" content="发现你的生活态度，与百万年轻人一起探索未来生活方式">
+    
+    <!-- 使用国内CDN加速 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        /* 自定义颜色（不用tailwind配置） */
+        .bg-primary { background-color: #6366F1; }
+        .bg-secondary { background-color: #EC4899; }
+        .bg-accent { background-color: #10B981; }
+        .text-primary { color: #6366F1; }
+        .text-secondary { color: #EC4899; }
+        .text-accent { color: #10B981; }
+        
+        /* 动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.5s ease-out forwards;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .slide {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+            opacity: 0;
+        }
+        
+        .slide.active {
+            opacity: 1;
+        }
+        
+        .vote-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .vote-option:active {
+            transform: scale(0.95);
+        }
+        
+        .vote-option.selected {
+            border-color: #6366F1 !important;
+            background-color: rgba(99, 102, 241, 0.2) !important;
+        }
+        
+        /* 文本阴影 */
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* 贴纸样式 */
+        .sticker-item {
+            position: absolute;
+            font-size: 28px;
+            cursor: grab;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            z-index: 5;
+        }
+        
+        .sticker-item:active {
+            cursor: grabbing;
+            transform: scale(1.2);
+        }
+        
+        /* 安全区域适配 */
+        @supports (padding: env(safe-area-inset-bottom)) {
+            .safe-padding-bottom {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .safe-padding-top {
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载页面 -->
+    <div id="loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#6366F1;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;">
+        <div class="animate-float" style="font-size:48px;margin-bottom:16px;">💝</div>
+        <div style="font-size:28px;font-weight:bold;margin-bottom:20px;">生活方式调查</div>
+        <div style="width:200px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;">
+            <div id="loading-progress" style="height:100%;background:white;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <div id="loading-text" style="margin-top:12px;font-size:14px;">加载中... 0%</div>
+    </div>
+
+    <!-- 主舞台 -->
+    <div id="main-stage" style="position:fixed;top:0;left:0;width:100%;height:100%;opacity:0;z-index:1;">
+        
+        <!-- 顶
+
+部进度条 -->
+        <div style="position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(255,255,255,0.2);z-index:100;">
+            <div id="stage-progress" style="height:100%;background:white;width:0%;transition:width 0.3s;"></div>
+        </div>
+        
+        <!-- 页面容器 -->
+        <div id="slides-container" style="width:100%;height:100%;position:relative;overflow:hidden;">
+            
+            <!-- 第1页：欢迎 -->
+            <div id="slide-1" class="slide active" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#7C3AED);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(0);">
+                <div class="animate-float" style="font-size:48px;margin-bottom:12px;">⭐</div>
+                <h1 style="font-size:clamp(1.5rem,5vw,2.2rem);font-weight:bold;text-align:center;margin-bottom:8px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">2026生活方式大调查</h1>
+                <p style="font-size:clamp(0.9rem,3vw,1.1rem);text-align:center;margin-bottom:24px;opacity:0.9;max-width:280px;">发现你的生活态度，与百万年轻人一起探索未来生活方式</p>
+                
+                <div id="user-info" style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;">
+                    <div id="avatar-container" style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden;font-size:36px;">
+                        👤
+                    </div>
+                    <button id="get-user-info" style="background:white;color:#6366F1;border:none;border-radius:50px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;">
+                        📱 点击设置头像昵称
+                    </button>
+                </div>
+                
+                <button id="start-btn" style="display:none;background:white;color:#6366F1;border:none;border-radius:50px;padding:12px 28px;font-size:16px;font-weight:bold;cursor:pointer;min-height:44px;animation:scaleIn 0.5s ease-out;">
+                    开始探索 →
+                </button>
+            </div>
+            
+            <!-- 第2页：投票1 -->
+            <div id="slide-2" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#EC4899,#F43F5E);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <h2 style="font-size:clamp(1.2rem,4vw,1.6rem);font-weight:bold;text-align:center;margin-bottom:20px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">你最喜欢的休闲方式是？</h2>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin-bottom:20px;">
+                    <div class="vote-option" data-vote="1" onclick="selectVote(this,'vote1')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">📚</span>
+                        <span style="font-size:13px;font-weight:600;">阅读书籍</span>
+                    </div>
+                    <div class="vote-option" data-vote="2" onclick="selectVote(this,'vote1')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🎮</span>
+                        <span style="font-size:13px;font-weight:600;">电子游戏</span>
+                    </div>
+                    <div class="vote-option" data-vote="3" onclick="selectVote(this,'vote1')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🎵</span>
+                        <span style="font-size:13px;font-weight:600;">音乐/电影</span>
+                    </div>
+                    <div class="vote-option" data-vote="4" onclick="selectVote(this,'vote1')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🚴</span>
+                        <span style="font-size:13px;font-weight:600;">户外运动</span>
+                    </div>
+                </div>
+                
+                <button id="vote1-next" class="vote-next-btn" onclick="goToSlide(3)" style="background:white;color:#EC4899;border:none;border-radius:50px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;opacity:0.5;pointer-events:none;">
+                    下一题 →
+                </button>
+            </div>
+            
+            <!-- 第3页：投票2 -->
+            <div id="slide-3" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#10B981,#0D9488);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <h2 style="font-size:clamp(1.2rem,4vw,1.6rem);font-weight:bold;text-align:center;margin-bottom:20px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">你理想的工作状态是？</h2>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin-bottom:20px;">
+                    <div class="vote-option" data-vote="1" onclick="selectVote(this,'vote2')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🏢</span>
+                        <span style="font-size:13px;font-weight:600;">稳定朝九晚五</span>
+                    </div>
+                    <div class="vote-option" data-vote="2" onclick="selectVote(this,'vote2')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🏠</span>
+                        <span style="font-size:13px;font-weight:600;">远程办公</span>
+                    </div>
+                    <div class="vote-option" data-vote="3" onclick="selectVote(this,'vote2')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">🚀</span>
+                        <span style="font-size:13px;font-weight:600;">创业打拼</span>
+                    </div>
+                    <div class="vote-option" data-vote="4" onclick="selectVote(this,'vote2')" style="background:rgba(255,255,255,0.15);border:2px solid transparent;border-radius:14px;padding:16px 10px;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                        <span style="font-size:28px;">☕</span>
+                        <span style="font-size:13px;font-weight:600;">自由职业</span>
+                    </div>
+                </div>
+                
+                <button id="vote2-next" class="vote-next-btn" onclick="goToSlide(4)" style="background:white;color:#10B981;border:none;border-radius:50px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;opacity:0.5;pointer-events:none;">
+                    下一题 →
+                </button>
+            </div>
+            
+            <!-- 第4页：绘图 -->
+            <div id="slide-4" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#F59E0B,#F97316);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <h2 style="font-size:clamp(1.2rem,4vw,1.6rem);font-weight:bold;text-align:center;margin-bottom:4px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">画一画你心中的美好生活</h2>
+                <p style="font-size:13px;opacity:0.9;margin-bottom:12px;">用手指在下方画布上随意绘制</p>
+                
+                <div style="background:white;border-radius:10px;padding:4px;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+                    <canvas id="drawing-canvas" style="display:block;border-radius:8px;cursor:crosshair;touch-action:none;max-width:100%;height:auto;"></canvas>
+                </div>
+                
+                <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:16px;flex-wrap:wrap;">
+                    <button id="clear-canvas" onclick="clearCanvas()" style="background:white;color:#F97316;border:none;border-radius:50px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;min-height:44px;">🧹 清除</button>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:13px;">颜色:</span>
+                        <input type="color" id="brush-color" value="#6366F1" onchange="changeColor(this.value)" style="width:36px;height:36px;border:none;border-radius:50%;cursor:pointer;padding:0;">
+                    </div>
+                </div>
+                
+                <button id="drawing-next" onclick="goToSlide(5)" style="background:white;color:#F97316;border:none;border-radius:50px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;">
+                    继续 →
+                </button>
+            </div>
+            
+            <!-- 第5页：贴纸装饰 -->
+            <div id="slide-5" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <h2 style="font-size:clamp(1.2rem,4vw,1.6rem);font-weight:bold;text-align:center;margin-bottom:4px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">✨ 装饰你的专属头像</h2>
+                <p style="font-size:13px;opacity:0.9;margin-bottom:16px;">点击贴纸添加到头像上，可以拖动哦</p>
+                
+                <div id="sticker-area" style="position:relative;width:200px;height:200px;margin-bottom:16px;">
+                    <div style="width:200px;height:200px;border-radius:50%;overflow:hidden;border:4px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+                        <img id="edit-avatar" src="" alt="头像" style="width:100%;height:100%;object-fit:cover;">
+                    </div>
+                    <div id="stickers-container" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+                </div>
+                
+                <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;max-width:300px;">
+                    <button onclick="addSticker('❤️')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">❤️</button>
+                    <button onclick="addSticker('⭐')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">⭐</button>
+                    <button onclick="addSticker('🎉')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">🎉</button>
+                    <button onclick="addSticker('🌈')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">🌈</button>
+                    <button onclick="addSticker('✨')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">✨</button>
+                    <button onclick="addSticker('🔥')" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);font-size:22px;cursor:pointer;">🔥</button>
+                </div>
+                
+                <button id="image-next" onclick="goToSlide(6)" style="background:white;color:#6366F1;border:none;border-radius:50px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;">
+                    生成结果 ✨
+                </button>
+            </div>
+            
+            <!-- 第6页：表单 -->
+            <div id="slide-6" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#374151,#1F2937);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <h2 style="font-size:clamp(1.2rem,4vw,1.6rem);font-weight:bold;text-align:center;margin-bottom:20px;text-shadow:0 2px 4px rgba(0,0,0,0.2);">留下你的联系方式</h2>
+                <p style="font-size:13px;opacity:0.9;margin-bottom:20px;">我们将抽取幸运用户送出精美礼品</p>
+                
+                <form id="contact-form" onsubmit="submitForm(event)" style="width:100%;max-width:300px;">
+                    <div style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:14px;">姓名</label>
+                        <input type="text" id="name-input" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:16px;outline:none;" placeholder="请输入您的姓名">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:14px;">手机号码</label>
+                        <input type="tel" id="phone-input" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:16px;outline:none;" placeholder="请输入您的手机号码">
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;margin-bottom:6px;font-size:14px;">电子邮箱（选填）</label>
+                        <input type="email" id="email-input" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:16px;outline:none;" placeholder="请输入您的电子邮箱">
+                    </div>
+                    
+                    <button type="submit" style="width:100%;background:#6366F1;color:white;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;">
+                        提交并查看结果 ✓
+                    </button>
+                </form>
+            </div>
+            
+            <!-- 第7页：结果页 -->
+            <div id="slide-7" class="slide" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366F1,#7C3AED);color:white;padding:20px;padding-top:40px;padding-bottom:80px;transform:translateX(100%);">
+                <div id="result-card" style="background:white;border-radius:20px;padding:24px;color:#333;width:100%;max-width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                    <div id="result-avatar" style="width:70px;height:70px;border-radius:50%;overflow:hidden;border:3px solid #6366F1;margin:0 auto 12px;">
+                        <img src="" alt="头像" style="width:100%;height:100%;object-fit:cover;">
+                    </div>
+                    <h3 id="result-name" style="font-size:20px;font-weight:bold;color:#6366F1;margin-bottom:4px;">用户</h3>
+                    <p style="font-size:13px;color:#999;margin-bottom:16px;">你的2026生活方式报告</p>
+                    
+                    <div style="background:#f5f5f5;border-radius:10px;padding:10px;margin-bottom:8px;text-align:left;">
+                        <div style="font-size:12px;font-weight:600;margin-bottom:4px;">休闲偏好</div>
+                        <p id="result-leisure" style="font-size:13px;color:#666;">-</p>
+                    </div>
+                    <div style="background:#f5f5f5;border-radius:10px;padding:10px;margin-bottom:8px;text-align:left;">
+                        <div style="font-size:12px;font-weight:600;margin-bottom:4px;">工作态度</div>
+                        <p id="result-work" style="font-size:13px;color:#666;">-</p>
+                    </div>
+                    <div style="background:#f5f5f5;border-radius:10px;padding:10px;margin-bottom:12px;text-align:left;">
+                        <div style="font-size:12px;font-weight:600;margin-bottom:4px;">生活关键词</div>
+                        <div id="result-keywords" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+                    </div>
+                    
+                    <div style="display:flex;gap:8px;">
+                        <button id="share-btn" onclick="shareResult()" style="flex:1;background:#6366F1;color:white;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">📤 分享</button>
+                        <button id="screenshot-btn" onclick="saveImage()" style="flex:1;background:#EC4899;color:white;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">📸 保存</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- 导航点 -->
+        <div style="position:fixed;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:100;">
+            <div class="nav-dot" data-slide="1" style="width:8px;height:8px;border-radius:8px;background:white;opacity:0.9;"></div>
+            <div class="nav-dot" data-slide="2" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+            <div class="nav-dot" data-slide="3" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+            <div class="nav-dot" data-slide="4" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+            <div class="nav-dot" data-slide="5" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+            <div class="nav-dot" data-slide="6" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+            <div class="nav-dot" data-slide="7" style="width:8px;height:8px;border-radius:50%;background:white;opacity:0.3;"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============ 全局变量 ============
+        var currentSlide = 1;
+        var totalSlides = 7;
+        var userData = {
+            name: '生活探索家',
+            avatar: '',
+            votes: {},
+            drawing: '',
+            stickers: []
+        };
+        
+        var voteResults = {
+            1: {
+                1: '你喜欢在文字中寻找宁静与智慧，书籍是你最好的朋友',
+                2: '游戏是你放松和社交的重要方式',
+                3: '音乐和电影丰富了你的精神世界',
+                4: '你热爱大自然，喜欢在运动中释放压力'
+            },
+            2: {
+                1: '你追求稳定和安全感，喜欢有规律的生活节奏',
+                2: '你注重工作与生活平衡，享受灵活的办公方式',
+                3: '你充满激情和野心，愿意为梦想付出努力',
+                4: '你向往自由，希望掌控自己的时间和生活'
+            }
+        };
+        
+        var keywords = ['热爱生活', '积极向上', '独立思考', '追求自由', '内心丰富', '有创造力', '乐观开朗', '脚踏实地'];
+        
+        // ============ 加载动画 ============
+        function startLoading() {
+            var progress = 0;
+            var fill = document.getElementById('loading-progress');
+            var text = document.getElementById('loading-text');
+            
+            var timer = setInterval(function() {
+                progress += Math.random() * 12;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(timer);
+                    setTimeout(function() {
+                        document.getElementById('loading-screen').style.transition = 'opacity 0.5s';
+                        document.getElementById('loading-screen').style.opacity = '0';
+                        document.getElementById('main-stage').style.opacity = '1';
+                        document.getElementById('main-stage').style.transition = 'opacity 0.6s';
+                        setTimeout(function() {
+                            document.getElementById('loading-screen').style.display = 'none';
+                        }, 500);
+                    }, 300);
+                }
+                fill.style.width = progress + '%';
+                text.textContent = '加载中... ' + Math.floor(progress) + '%';
+            }, 150);
+        }
+        
+        // ============ 页面切换 ============
+        function goToSlide(num) {
+            if (num < 1 || num > totalSlides) return;
+            
+            // 进度条
+            document.getElementById('stage-progress').style.width = ((num - 1) / (totalSlides - 1) * 100) + '%';
+            
+            // 导航点
+            document.querySelectorAll('.nav-dot').forEach(function(dot) {
+                var d = parseInt(dot.getAttribute('data-slide'));
+                if (d === num) {
+                    dot.style.width = '24px';
+                    dot.style.borderRadius = '8px';
+                    dot.style.opacity = '0.9';
+                } else if (d < num) {
+                    dot.style.width = '8px';
+                    dot.style.borderRadius = '50%';
+                    dot.style.opacity = '0.6';
+                } else {
+                    dot.style.width = '8px';
+                    dot.style.borderRadius = '50%';
+                    dot.style.opacity = '0.3';
+                }
+            });
+            
+            // 滑动动画
+            var dir = num > currentSlide ? 1 : -1;
+            var oldEl = document.getElementById('slide-' + currentSlide);
+            var newEl = document.getElementById('slide-' + num);
+            
+            oldEl.style.transform = 'translateX(' + (-100 * dir) + '%)';
+            oldEl.classList.remove('active');
+            
+            newEl.style.transform = 'translateX(0)';
+            newEl.classList.add('active');
+            
+            currentSlide = num;
+            
+            // 页面初始化
+            if (num === 4) setTimeout(initCanvas, 200);
+            if (num === 5) initStickerPage();
+            if (num === 7) showResult();
+            
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+        
+        // ============ 用户信息 ============
+        document.getElementById('get-user-info').addEventListener('click', function() {
+            var name = prompt('请输入你的昵称', '生活探索家');
+            if (name && name.trim()) userData.name = name.trim();
+            
+            userData.avatar = 'https://picsum.photos/200/200?random=' + Date.now();
+            
+            document.getElementById('avatar-container').innerHTML = '<img src="' + userData.avatar + '" style="width:100%;height:100%;object-fit:cover;">';
+            document.getElementById('get-user-info').style.display = 'none';
+            document.getElementById('start-btn').style.display = 'inline-block';
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+        });
+        
+        document.getElementById('start-btn').addEventListener('click', function() {
+            goToSlide(2);
+        });
+        
+        // ============ 投票 ============
+        var currentVoteType = '';
+        
+        function selectVote(el, type) {
+            var parent = el.parentElement;
+            parent.querySelectorAll('.vote-option').forEach(function(opt) {
+                opt.classList.remove('selected');
+            });
+            el.classList.add('selected');
+            
+            var val = parseInt(el.getAttribute('data-vote'));
+            if (type === 'vote1') {
+                userData.votes[1] = val;
+                document.getElementById('vote1-next').style.opacity = '1';
+                document.getElementById('vote1-next').style.pointerEvents = 'auto';
+            } else {
+                userData.votes[2] = val;
+                document.getElementById('vote2-next').style.opacity = '1';
+                document.getElementById('vote2-next').style.pointerEvents = 'auto';
+            }
+            
+            if (navigator.vibrate) navigator.vibrate(30);
+        }
+        
+        // ============ 画布 ============
+        var canvas, ctx, drawing = false, lastX = 0, lastY = 0;
+        
+        function initCanvas() {
+            canvas = document.getElementById('drawing-canvas');
+            ctx = canvas.getContext('2d');
+            
+            var w = Math.min(300, window.innerWidth - 40);
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            
+            canvas.style.width = w + 'px';
+            canvas.style.height = (w * 0.8) + 'px';
+            canvas.width = w * dpr;
+            canvas.height = w * 0.8 * dpr;
+            ctx.scale(dpr, dpr);
+            
+            ctx.strokeStyle = '#6366F1';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            canvas.onmousedown = startDraw;
+            canvas.onmousemove = draw;
+            canvas.onmouseup = stopDraw;
+            canvas.onmouseout = stopDraw;
+            canvas.ontouchstart = startDraw;
+            canvas.ontouchmove = draw;
+            canvas.ontouchend = stopDraw;
+        }
+        
+        function getPos(e) {
+            var r = canvas.getBoundingClientRect();
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            var sx = (canvas.width / dpr) / r.width;
+            var sy = (canvas.height / dpr) / r.height;
+            var cx = e.touches ? e.touches[0].clientX : e.clientX;
+            var cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (cx - r.left) * sx, y: (cy - r.top) * sy };
+        }
+        
+        function startDraw(e) { e.preventDefault(); drawing = true; var p = getPos(e); lastX = p.x; lastY = p.y; }
+        
+        function draw(e) {
+            if (!drawing) return;
+            e.preventDefault();
+            var p = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            lastX = p.x; lastY = p.y;
+        }
+        
+        function stopDraw() { drawing = false; }
+        
+        function clearCanvas() {
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+        }
+        
+        function changeColor(c) { if (ctx) ctx.strokeStyle = c; }
+        
+        // ============ 贴纸 ============
+        function initStickerPage() {
+            document.getElementById('edit-avatar').src = userData.avatar || 'https://picsum.photos/200/200?random=' + Date.now();
+            document.getElementById('stickers-container').innerHTML = '';
+        }
+        
+        var stickerCount = 0;
+        
+        function addSticker(emoji) {
+            var layer = document.getElementById('stickers-container');
+            stickerCount++;
+            
+            var el = document.createElement('div');
+            el.className = 'sticker-item';
+            el.textContent = emoji;
+            el.id = 's-' + stickerCount;
+            el.style.left = (Math.random() * 160) + 'px';
+            el.style.top = (Math.random() * 160) + 'px';
+            
+            // 拖拽
+            var sx, sy, sl, st;
+            
+            function onStart(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var t = e.touches ? e.touches[0] : e;
+                sx = t.clientX; sy = t.clientY;
+                sl = parseInt(el.style.left) || 0;
+                st = parseInt(el.style.top) || 0;
+                
+                function onMove(e2) {
+                    var t2 = e2.touches ? e2.touches[0] : e2;
+                    el.style.left = Math.max(0, Math.min(170, sl + t2.clientX - sx)) + 'px';
+                    el.style.top = Math.max(0, Math.min(170, st + t2.clientY - sy)) + 'px';
+                }
+                
+                function onEnd() {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onEnd);
+                }
+                
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend', onEnd);
+            }
+            
+            el.addEventListener('mousedown', onStart);
+            el.addEventListener('touchstart', onStart, { passive: false });
+            el.addEventListener('dblclick', function() { el.remove(); });
+            
+            layer.appendChild(el);
+            if (navigator.vibrate) navigator.vibrate(15);
+        }
+        
+        // ============ 表单 ============
+        function submitForm(e) {
+            e.preventDefault();
+            var n = document.getElementById('name-input').value;
+            if (n && n.trim()) userData.name = n.trim();
+            goToSlide(7);
+        }
+        
+        // ============ 结果页 ============
+        function showResult() {
+            document.querySelector('#result-avatar img').src = userData.avatar;
+            document.getElementById('result-name').textContent = userData.name;
+            document.getElementById('result-leisure').textContent = voteResults[1][userData.votes[1]] || '你有着独特的生活态度';
+            document.getElementById('result-work').textContent = voteResults[2][userData.votes[2]] || '你对工作有独到的见解';
+            
+            var shuffled = keywords.sort(function() { return 0.5 - Math.random(); });
+            var tags = shuffled.slice(0, 3);
+            var tc = document.getElementById('result-keywords');
+            tc.innerHTML = '';
+            tags.forEach(function(t) {
+                var span = document.createElement('span');
+                span.style.cssText = 'background:rgba(99,102,241,0.1);color:#6366F1;padding:4px 12px;border-radius:20px;font-size:12px;';
+                span.textContent = t;
+                tc.appendChild(span);
+            });
+        }
+        
+        function shareResult() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '我的2026生活方式报告',
+                    text: '我刚刚完成了2026生活方式大调查，快来看看你的结果吧！',
+                    url: window.location.href
+                });
+            } else {
+                alert('请截图分享到朋友圈');
+            }
+        }
+        
+        function saveImage() {
+            if (typeof html2canvas !== 'undefined') {
+                var card = document.getElementById('result-card');
+                html2canvas(card).then(function(c) {
+                    var a = document.createElement('a');
+                    a.download = '我的2026生活方式报告.png';
+                    a.href = c.toDataURL('image/png');
+                    a.click();
+                });
+            } else {
+                alert('请截图保存结果');
+            }
+        }
+        
+        // ============ 启动 ============
+        window.addEventListener('DOMContentLoaded', startLoading);
+    </script>
+</body>
+</html>
